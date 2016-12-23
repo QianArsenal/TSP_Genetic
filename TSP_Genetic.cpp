@@ -33,6 +33,16 @@ struct city_group{
 	{
 		return sum_dis < c_g.sum_dis;
 	}
+	void destroy()
+	{
+		struct city *h = c_header;
+		struct city *n;
+		for (int i = 0; i < CITY_NUM; i++){
+			n = h->next_city;
+			free(h);
+			h = n;
+		}
+	}
 };
 
 int generate_random_num(int* r_num, int c_n)
@@ -260,7 +270,14 @@ int _tmain(int argc, _TCHAR* argv[])
 		roads_file << h->city_id << " ";
 		h = h->next_city;
 	}
-	
+	math_buf.destroy();
+	fath_buf.destroy();
+	for (int i = 0; i < city_genetics.size();)
+	{
+		city_group c = city_genetics[city_genetics.size()-1];
+		city_genetics.pop_back();
+		c.destroy();
+	}
 	return 0;
 }
 
