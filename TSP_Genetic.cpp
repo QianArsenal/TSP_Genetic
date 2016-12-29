@@ -18,34 +18,25 @@ using namespace std;
 #define MAX_ROUND	100
 #define INHERIT_NUM		30
 
-int dis[CITY_NUM][CITY_NUM];
-int x[CITY_NUM];
-int y[CITY_NUM];
-struct city{
+int dis[CITY_NUM][CITY_NUM];		//城市间的距离
+int x[CITY_NUM];					//城市坐标
+int y[CITY_NUM];		
+struct city{			//城市的id和指向下一城市的指针
 	int city_id;
 	city* next_city;
 };
 
-struct city_group{
+//一个旅行路径， c_header指向第一个城市
+struct city_group{	
 	struct city* c_header;
 	int sum_dis;
 	bool operator < (const city_group& c_g) const
 	{
 		return sum_dis < c_g.sum_dis;
 	}
-	void destroy()
-	{
-		struct city *h = c_header;
-		struct city *n;
-		for (int i = 0; i < CITY_NUM; i++){
-			n = h->next_city;
-			free(h);
-			h = n;
-		}
-	}
 };
 
-int generate_random_num(int* r_num, int c_n)
+int generate_random_num(int* r_num, int c_n)		
 {
 	int n = (int)pow(10 ,rand() % c_n);
 	int res = (*r_num / n) % 10;
@@ -53,17 +44,19 @@ int generate_random_num(int* r_num, int c_n)
 	return res;
 }
 
-vector<city_group> city_genetics;
+vector<city_group> city_genetics;		//保存种群的向量
+vector<city *> city_group_points;		//保存分配到的堆内存的指针
 
-city* generate_city_group()
+city* generate_city_group()			//随机产生一个个体
 {
 	city *header, *last;
 	int ran_num = RANDOM_NUM;
-	header = (city*)malloc(sizeof(city));
+	header = (city*)malloc(CITY_NUM*sizeof(city));
+	city_group_points.push_back(header);
 	last = header;
 	header->city_id = generate_random_num(&ran_num, CITY_NUM);
 	for (int i = 1; i < CITY_NUM; i++){
-		last->next_city = (city*)malloc(sizeof(city));
+		last->next_city = header + i;
 		last = last->next_city;
 		last->city_id = generate_random_num(&ran_num, CITY_NUM - i);
 	}
@@ -82,7 +75,7 @@ int cal_sum_dis(city *header)
 	return sum;
 }
 
-void generate_genetics()
+void generate_genetics()		//产生种群
 {
 	city_genetics.clear();
 	for (int i = 0; i < GENETIC_NUM; i++){
@@ -122,6 +115,8 @@ void change_city_group(city_group *cg, city *last, int c_id)
 	city_this->next_city = city_last;
 	return;
 }
+
+//两个个体进行交叉
 void city_group_cross(city_group *fath, city_group *math, city_group *res)
 {
 	city *fath_this = fath->c_header;
@@ -198,6 +193,7 @@ void genetics_cross(city_group *buf_1, city_group *buf_2)
 	}
 }
 
+//变异
 void genetics_change()
 {
 	for (int i = 0; i < GENETIC_NUM; i++){
@@ -235,6 +231,7 @@ void show_res()
 	}
 }
 
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	srand((unsigned int)time(NULL));
@@ -263,20 +260,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	sort(city_genetics.begin(), city_genetics.end(), less<city_group>());
 	show_res();
-	ofstream roads_file("city_roads.txt");
+	ofstream roads_file("city_roads.txt");		//将最优解保存到文件中
 	city_group res = city_genetics[0];
 	city *h = res.c_header;
 	for (int i = 0; i < CITY_NUM; i++){
 		roads_file << h->city_id << " ";
 		h = h->next_city;
 	}
-	math_buf.destroy();
-	fath_buf.destroy();
-	for (int i = 0; i < city_genetics.size();)
-	{
-		city_group c = city_genetics[city_genetics.size()-1];
-		city_genetics.pop_back();
-		c.destroy();
+	for (int i = 0; i < city_group_points.size(); i++){
+		free(city_group_points[i]);
 	}
 	return 0;
 }
